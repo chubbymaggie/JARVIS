@@ -3,6 +3,7 @@
 # Name: Misc.py
 # Description: Auxiliary functions which can not be stored anywhere else
 #
+
 from idc import *
 from idaapi import *
 from idautils import *
@@ -10,8 +11,23 @@ from idautils import *
 from collections import defaultdict
 import traceback
 import re
-import string
 import math
+
+
+#################################################################
+def to_str(unicode_or_string):
+    """
+    Efficient Python is a cool book :)
+    :param unicode_or_string: exactly that
+    :return: an instance of str
+    """
+    if isinstance(unicode_or_string, unicode):
+        value = unicode_or_string.encode('utf-8')
+
+    else:
+        value = unicode_or_string
+
+    return value
 
 
 #################################################################
@@ -30,6 +46,17 @@ def pyside_to_ida_color(s):
     ic = (b << 16) | (g << 8) | r
 
     return ic
+
+
+#################################################################
+def module_boundaries():
+    """
+    Convenience function.
+    Returns min and max addresses
+    :return: boundaries
+    """
+
+    return (MinEA(), MaxEA())
 
 
 #################################################################
@@ -69,7 +96,8 @@ def is_external_jmp(ins_ea):
     True for JMPs between functions.
     NN_JMP (86): jmp sub_xxx (0xE9 + offset) or jmp loc_xxx (0xE9 + offset)
     NN_JMPNI (88): jmp __imp_Writefile (0xFF25 + address in .idata)
-    These appear unfortunately in loops as well (jmp ds:dwordxxx[eax*4] or alike)K
+    These appear unfortunately in loops as well:
+    (jmp ds:dwordxxx[eax*4] or alike)K
     """
     # TODO: Check if this is accurate (unit tests? :))
 
@@ -239,7 +267,6 @@ class importManager():
         self.import_dict = {}
         self._enum_all_imports()
 
-
     def find_import_callers(self, regexp):
         """
         Finds interesting imported functions and the nodes that call them.
@@ -258,7 +285,8 @@ class importManager():
 
         for imp_name, imp_ea in self.import_dict.iteritems():
 
-            # This dict has the *IAT names* (i.e. __imp_ReadFile, within the .idata section)
+            # This dict has the *IAT names*
+            # i.e. __imp_ReadFile, within the .idata section
             if importPattern.match(imp_name):
 
                 for import_caller in XrefsTo(imp_ea, 1):
@@ -292,14 +320,13 @@ class importManager():
 
         return importCallers
 
-
     def _enum_all_imports(self):
         """
         Useful afterwards for resolving addresses to imports.
-        Following code has been taken shamelessly from the "ex_imports.py" distribution example :)
+        This code has been taken shamelessly from the "ex_imports.py" example.
 
         @rtype: dictionary
-        @return: dictionary containing import name & address { "name" : imp_ea }
+        @return: dictionary containing import name & address {"name" : imp_ea}
         """
         print "= [*] Populating imports dictionary..."
 
@@ -317,7 +344,6 @@ class importManager():
 
         return self.import_dict
 
-
     def _imp_cb(self, ea, name, ord):
         """
         Used by _enum_all_imports.
@@ -333,7 +359,6 @@ class importManager():
             self.import_dict[name] = ea
 
         return True
-
 
     def _find_import_name(self, iaddr):
         """
@@ -360,17 +385,15 @@ class importManager():
 #################################################################
 # Shannon's entropy is a must :)
 #################################################################
-def entropy(s, ascii=True):
+def entropy(s):
     """
     Shannon's definition:
     sum{ x, -p(x) * log2(p(x)) }
     """
-    # TODO: This is for ASCII only
-
     H = 0.0
 
-    for c in string.printable:
-        if s.count(c) > 0:
+    for c in xrange(256):
+        if s.count(chr(c)) > 0:
             H += -1.0 * p(c, s) * math.log(p(c, s), 2)
 
     return H
@@ -380,7 +403,7 @@ def p(c, s):
     """
     Frequency of c in s
     """
-    return s.count(c) / (len(s) * 1.0)
+    return s.count(chr(c)) / (len(s) * 1.0)
 
 
 #################################################################
